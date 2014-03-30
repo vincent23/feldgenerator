@@ -1,6 +1,90 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <stdbool.h>
+#include <math.h>
 
-int main(const int argc, const char * const argv[]) {
+#include <IL/il.h>
+
+static int imin(int a, int b);
+static int imax(int a, int b);
+
+int main(const int argc, const char* const argv[]) {
+	ilInit();
+	ilEnable(IL_ORIGIN_SET);
+	ilOriginFunc(IL_ORIGIN_LOWER_LEFT);
+	ILuint image;
+	ilGenImages(1, &image);
+	ilBindImage(image);
+	const char* const path = argv[1];
+	const ILboolean load_success = ilLoadImage(path);
+	if(load_success== IL_FALSE) {
+		// handle error TODO
+		ilDeleteImages(1, &image);
+		return EXIT_FAILURE;
+	}
+	const ILboolean convert_success = ilConvertImage(IL_RGB, IL_UNSIGNED_BYTE);
+	if(convert_success == IL_FALSE) {
+		// handle error TODO
+		ilDeleteImages(1, &image);
+		return EXIT_FAILURE;
+	}
+
+	const ILint width = ilGetInteger(IL_IMAGE_WIDTH);
+	const ILint height = ilGetInteger(IL_IMAGE_HEIGHT);
+
 	(void) argc;
-	(void) argv;
+
+	// TODO
+	const int scale = 10;
+	const ILint out_width = width / scale;
+	const ILint out_height = height / scale;
+
+	ILubyte out_data[out_width * out_height];
+
+	const int spread = 150;
+
+	const ILubyte* const data = ilGetData();
+
+	for(int out_y = 0; out_y < out_height; out_y++) {
+		const int orig_y = out_y * scale + scale / 2;
+		for(int out_x = 0; out_x < out_width; out_x++) {
+			const int orig_x = out_x * scale + scale / 2;
+
+			// only check blue channel
+			const bool inside = data[3 * (width * orig_y + orig_x)] == 0xFF;
+			int mindist2 = spread * spread;
+			for(int y = imax(orig_y - spread, 0); y < imin(orig_y + spread, height); y++) {
+				for(int x = imax(orig_x - spread, 0); x < imin(orig_x + spread, width); x++) {
+					if(inside != (data[3 * (width * y + x)] == 0xFF)) {
+						const int dx = orig_x - x;
+						const int dy = orig_y - y;
+						const int dist2 = dx * dx + dy * dy;
+						mindist2 = imin(dist2, mindist2);
+					}
+				}
+			}
+
+			const double dist = sqrt(mindist2);
+			out_data[ (out_width * out_y + out_x)] = (inside ? -1 : 1) * dist / spread * 0x7F + 0x7F;
+		}
+	}
+	ilDeleteImages(1, &image);
+
+	ILuint out_image;
+	ilGenImages(1, &out_image);
+	ilBindImage(out_image);
+
+	ilTexImage(out_width, out_height, 1, 1, IL_LUMINANCE, IL_UNSIGNED_BYTE, &out_data);
+	ilEnable(IL_FILE_OVERWRITE);
+	ilSaveImage("out.png");
+	ilDeleteImages(1, &image);
+	return EXIT_SUCCESS;
+}
+
+static int imin(int a, int b) {
+	return (a < b) ? a : b;
+}
+
+static int imax(int a, int b) {
+	return (a > b) ? a : b;
 }

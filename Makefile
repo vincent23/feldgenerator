@@ -7,8 +7,10 @@ SRCEXT := c
 SOURCES := $(shell find $(SRCDIR) -type f -name *.$(SRCEXT))
 OBJECTS := $(patsubst $(SRCDIR)/%,$(BUILDDIR)/%,$(SOURCES:.$(SRCEXT)=.o))
 
-CFLAGS := -std=c99 -Wall -Wextra -Werror -g $(shell pkg-config --cflags IL)
-LIB := $(shell pkg-config --libs IL)
+CFLAGS := -std=c99 -Wall -Wextra -Werror $(shell pkg-config --cflags IL)
+# CFLAGS := $(CFLAGS) -g # DEBUG
+CFLAGS := $(CFLAGS) -O3 # RELEASE
+LIB := -lm $(shell pkg-config --libs IL)
 INC := -I $(INCDIR)
 
 $(TARGET): $(OBJECTS)
