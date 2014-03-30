@@ -5,9 +5,7 @@
 #include <IL/il.h>
 
 #include "params.h"
-
-static int imin(int a, int b);
-static int imax(int a, int b);
+#include "util.h"
 
 int main(const int argc, const char* const argv[]) {
 	param_t parameters;
@@ -82,12 +80,4 @@ int main(const int argc, const char* const argv[]) {
 	ilSaveImage(parameters.out);
 	ilDeleteImages(1, &image);
 	return EXIT_SUCCESS;
-}
-
-static int imin(const int a, const int b) {
-	return (a < b) ? a : b;
-}
-
-static int imax(const int a, const int b) {
-	return (a > b) ? a : b;
 }
