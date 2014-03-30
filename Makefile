@@ -15,6 +15,7 @@ INC := -I $(INCDIR)
 
 $(TARGET): $(OBJECTS)
 	@echo "Linking…"
+	@mkdir -p bin
 	$(CC) $^ -o $(TARGET) $(LIB)
 
 $(BUILDDIR)/%.o: $(SRCDIR)/%.$(SRCEXT)
