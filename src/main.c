@@ -1,22 +1,27 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdbool.h>
 #include <math.h>
 
 #include <IL/il.h>
+
+#include "params.h"
 
 static int imin(int a, int b);
 static int imax(int a, int b);
 
 int main(const int argc, const char* const argv[]) {
+	param_t parameters;
+	if(!parse_args(argc, argv, &parameters)) {
+		return EXIT_FAILURE;
+	}
+
 	ilInit();
 	ilEnable(IL_ORIGIN_SET);
 	ilOriginFunc(IL_ORIGIN_LOWER_LEFT);
 	ILuint image;
 	ilGenImages(1, &image);
 	ilBindImage(image);
-	const char* const path = argv[1];
-	const ILboolean load_success = ilLoadImage(path);
+	const ILboolean load_success = ilLoadImage(parameters.in);
 	if(load_success== IL_FALSE) {
 		// handle error TODO
 		ilDeleteImages(1, &image);
@@ -32,16 +37,14 @@ int main(const int argc, const char* const argv[]) {
 	const ILint width = ilGetInteger(IL_IMAGE_WIDTH);
 	const ILint height = ilGetInteger(IL_IMAGE_HEIGHT);
 
-	(void) argc;
 
-	// TODO
-	const int scale = 10;
+	const int scale = parameters.scale;
+	const int spread = parameters.spread;
 	const ILint out_width = width / scale;
 	const ILint out_height = height / scale;
 
 	ILubyte out_data[out_width * out_height];
 
-	const int spread = 150;
 
 	const ILubyte* const data = ilGetData();
 
@@ -76,15 +79,15 @@ int main(const int argc, const char* const argv[]) {
 
 	ilTexImage(out_width, out_height, 1, 1, IL_LUMINANCE, IL_UNSIGNED_BYTE, &out_data);
 	ilEnable(IL_FILE_OVERWRITE);
-	ilSaveImage("out.png");
+	ilSaveImage(parameters.out);
 	ilDeleteImages(1, &image);
 	return EXIT_SUCCESS;
 }
 
-static int imin(int a, int b) {
+static int imin(const int a, const int b) {
 	return (a < b) ? a : b;
 }
 
-static int imax(int a, int b) {
+static int imax(const int a, const int b) {
 	return (a > b) ? a : b;
 }
