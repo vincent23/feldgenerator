@@ -1,11 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <math.h>
 
 #include <IL/il.h>
 
 #include "params.h"
-#include "util.h"
+#include "convert.h"
 
 int main(const int argc, const char* const argv[]) {
 	param_t parameters;
@@ -34,41 +33,23 @@ int main(const int argc, const char* const argv[]) {
 
 	const ILint width = ilGetInteger(IL_IMAGE_WIDTH);
 	const ILint height = ilGetInteger(IL_IMAGE_HEIGHT);
-
-
-	const int scale = parameters.scale;
-	const int spread = parameters.spread;
-	const ILint out_width = width / scale;
-	const ILint out_height = height / scale;
+	const ILint out_width = width / parameters.scale;
+	const ILint out_height = height / parameters.scale;
 
 	ILubyte out_data[out_width * out_height];
 
+	const image_t in = {
+		.width = width,
+		.height = height,
+		.data = ilGetData(),
+	};
+	const image_t out = {
+		.width = out_width,
+		.height = out_height,
+		.data = out_data,
+	};
+	convert(in, out, parameters);
 
-	const ILubyte* const data = ilGetData();
-
-	for(int out_y = 0; out_y < out_height; out_y++) {
-		const int orig_y = out_y * scale + scale / 2;
-		for(int out_x = 0; out_x < out_width; out_x++) {
-			const int orig_x = out_x * scale + scale / 2;
-
-			// only check blue channel
-			const bool inside = data[3 * (width * orig_y + orig_x)] == 0xFF;
-			int mindist2 = spread * spread;
-			for(int y = imax(orig_y - spread, 0); y < imin(orig_y + spread, height); y++) {
-				for(int x = imax(orig_x - spread, 0); x < imin(orig_x + spread, width); x++) {
-					if(inside != (data[3 * (width * y + x)] == 0xFF)) {
-						const int dx = orig_x - x;
-						const int dy = orig_y - y;
-						const int dist2 = dx * dx + dy * dy;
-						mindist2 = imin(dist2, mindist2);
-					}
-				}
-			}
-
-			const double dist = sqrt(mindist2);
-			out_data[ (out_width * out_y + out_x)] = (inside ? -1 : 1) * dist / spread * 0x7F + 0x7F;
-		}
-	}
 	ilDeleteImages(1, &image);
 
 	ILuint out_image;
